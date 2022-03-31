@@ -21,7 +21,7 @@ Stock.getAll = (result) => {
     result(null, res);
   });
 };
-Stock.update = (stock, result) => {
+Stock.update = async function a(stock, result) {
   console.log(stock)
     sql.query(
       "UPDATE stocks SET quantity = quantity + ? WHERE product = ? AND id = ? ",
@@ -37,10 +37,41 @@ Stock.update = (stock, result) => {
           result({ kind: "not_found" }, null);
           return;
         }
-        //console.log("results: ", { ...stock });
+        console.log( { ...stock });
         result(null, { ...stock });
       }
     );
   
 };
+
+Stock.createLog = (newLog, result) => {
+  sql.query("INSERT INTO logs SET ?", newLog
+  // , (err, res) => {
+  //   if (err) {
+  //     console.log("error: ", err);
+  //     result(err, null);
+  //     return;
+  //   }
+  //   //console.log("created tutorial: ", { id: res.insertId, ...newLog });
+  //   result(null, { id: res.insertId, ...newLog });
+  // }
+  );
+};
+
+// Stock.getAllLogs = (result) => {
+//   let query = "SELECT * FROM stocks";
+//   // if (title) {
+//   //   query += ` WHERE title LIKE '%${title}%'`;
+//   // }
+//   sql.query(query, (err, res) => {
+//     if (err) {
+//       //console.log("error: ", err);
+//       result(null, err);
+//       return;
+//     }
+//     //console.log("stocks: ", res);
+//     result(null, res);
+//   });
+// };
+
 module.exports = Stock;
