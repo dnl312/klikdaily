@@ -1,31 +1,33 @@
 const Stock = require("../models/stock.model.js");
-// Retrieve all stocks from the database (with condition).
 
-// exports.createLog = (req, res) => {
-//   // Validate request
-//   if (!req.body) {
-//     res.status(400).send({
-//       message: "Content can not be empty!"
-//     });
-//   }
-//   // Create a Tutorial
-//   const tutorial = new Tutorial({
-//     title: req.body.title,
-//     description: req.body.description,
-//     published: req.body.published || false
-//   });
-//   // Save Tutorial in the database
-//   Tutorial.create(tutorial, (err, data) => {
-//     if (err)
-//       res.status(500).send({
-//         message:
-//           err.message || "Some error occurred while creating the Tutorial."
-//       });
-//     else res.send(data);
-//   });
-// };
+exports.findAllLogById = (req, res) => {
+  Stock.getLogs(req.params.id, (err, data) => {
+    if (err) {
+      if (err.kind === "not_found") {
+        res.status(404).send({
+          message: `Not found Log with id ${req.params.id}.`
+        });
+      } else {
+        res.status(500).send({
+          message: "Error retrieving Log with id " + req.params.id
+        });
+      }
+    } else{
+      res.send(
+        {
+        "status_code" : 200,
+        "status": data.length >0 ?"Success, logs found": "No log found",
+        "location_id": req.params.id,
+        // "location_name": res[0].location,
+        // "product": res[0].product,
+        // "current_qty": res[0].quantity,
+        "logs": data
+      });
+    } 
+  });
+};
+
 exports.findAll = (req, res) => {
-  //const title = req.query.title;
   Stock.getAll((err, data) => {
     if (err)
       res.status(200).send({
@@ -38,99 +40,63 @@ exports.findAll = (req, res) => {
     "stocks": data});
   });
 };
-// Update a stock identified by the id in the request
-exports.update = (req, res) => {
+exports.update =async (req, res) => {
     if (!req.body) {
         res.status(200).send({
           message: "Content can not be empty!"
         });
       }
+      var dateTime = new Date().toISOString().replace('T', ' ').substring(0, 19)
+
       var adj = req.body.length;
-      // res.setHeader({
-      //   "status_code": 200,
-      //   "requests": req.body.length,
-      //   "adjusted": adj,
-      // },'application/json')
-      //console.log(req.body.length)
-      // res.setHeader({
-      //   "status_code": 200,
-      //   "requests": req.body.length,
-      //   "adjusted": adj,
-      // })
-      var arrRes= [];
-      console.log(req.body)
+      var arr=[]
+      var arrRes= []
       for(var i = 0; i < req.body.length; i++){
         
-        var a
+        var err,data
         await Stock.update(
-          // req.params.id,
-          
-          new Stock(req.body[0]),
-          (err, data) => {
-            console.log("1")
-            a="test1"
-            
+          new Stock(req.body[i]) 
+        ).then((dataItem)=>{
+          data = dataItem
+        })
+        .catch((errItem)=>{
+          err=errItem
+        });
             if (err) {
               if (err.kind === "not_found") {
-                
-                arrRes = new Array({
-                  "status": "Failed"
-                  //"updated_at": Date.now(),
-                  // "location_id": data[i].location_id,
-                  // "product" : data[i].product,
-                  //"result" :data
+                await arrRes.push({
+                  "status": "Failed",
+                  "error_message": "Invalid Product",
+                  "updated_at": dateTime,
+                  "location_id": req.body[i].location_id
                 })
-                // arrRes.push()
-                // res.send({
-                //   message: `Not found Item with id ${req.body.location_id}.`
-                // });
                 adj--
               } else {
-                // arrRes.push("test2")
-                // // arrRes = new Array({
-                // //   "status": "Failed"
-                // //   //"updated_at": Date.now(),
-                // //   // "location_id": data[i].location_id,
-                // //   // "product" : data[i].product,
-                // //   //"result" :data
-                // // })
-                // // res.send({
-                // //   message: "Error updating Item with id " + req.body.location_id
-                // // });
+                arrRes.push({
+                  "status": "Failed",
+                  "error_message": "Invalid Product",
+                  "updated_at": dateTime,
+                  "location_id": req.body[i].location_id
+                })
                 adj--
               }
-            } 
-            a="testSucess"
-            arrRes.push("testSucess")
-            // arrRes.Push({
-            //   "status": "Success"
-            //   //"updated_at": Date.now(),
-            //   // "location_id": data[i].location_id,
-            //   // "product" : data[i].product,
-            //   //"result" :data
-            // })
-            //else 
-            // arrRes.push(
-            //   data
-              
-            // );
-            // res.send({
-            //   "status": "Success",
-            //   //"updated_at": Date.now(),
-            //   // "location_id": data[i].location_id,
-            //   // "product" : data[i].product,
-            //   "result" :data
-            // });
-          }
-        );
-        console.log(a)
-                res.send()
-        console.log("2")
-        // arrRes.push("PING!!")
-        console.log(arrRes)
-        //res.send()
-        
+            } else{
+              arrRes.push({
+                "status": "Success",
+                "updated_at": dateTime,
+                "location_id": req.body[i].location_id,
+                "location_name": data.location,
+                "product" : req.body[i].product,
+                "adjustment" : req.body[i].adjustment,
+                "quantity" : data.quantity
+              })
+            }
       }
-
-      
+      arr.push({
+        "status_code": 200,
+        "requests": req.body.length,
+        "adjusted": adj,
+        "results" : arrRes
+      })
+      res.send(arr)
 };

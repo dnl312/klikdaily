@@ -8,70 +8,66 @@ const Stock = function(stock) {
 
 Stock.getAll = (result) => {
   let query = "SELECT * FROM stocks";
-  // if (title) {
-  //   query += ` WHERE title LIKE '%${title}%'`;
-  // }
   sql.query(query, (err, res) => {
     if (err) {
-      //console.log("error: ", err);
       result(null, err);
       return;
     }
-    //console.log("stocks: ", res);
     result(null, res);
   });
 };
-Stock.update = async function a(stock, result) {
-  console.log(stock)
+
+Stock.update = (stock)=> {
+  return new Promise((resolve, reject) => {
+    var dateTime = new Date();
     sql.query(
       "UPDATE stocks SET quantity = quantity + ? WHERE product = ? AND id = ? ",
       [stock.adjustment, stock.product, stock.location_id],
       (err, res) => {
         if (err) {
-          //console.log("error: ", stock);
-          result(null, err);
-          return;
+          reject(err);
         }
         if (res.affectedRows == 0) {
-          // not found stock with the id
-          result({ kind: "not_found" }, null);
-          return;
+          reject({ kind: "not_found" });
+        }else{
+          sql.query(
+           "SELECT * FROM stocks Where id=? limit 1",
+           [stock.location_id],
+           (err, res) => {
+            Stock.createLog({
+              "location_id": stock.location_id,
+              "type": stock.adjustment<0 ? "Outbound":"Inbound",
+              "created_at": dateTime,
+              "adjustment": stock.adjustment,
+              "quantity": res[0].quantity
+            })
+            stock.location = res[0].location 
+            stock.quantity = res[0].quantity
+            resolve({ ...stock});
+           }
+           )
         }
-        console.log( { ...stock });
-        result(null, { ...stock });
       }
     );
-  
+})
 };
 
-Stock.createLog = (newLog, result) => {
-  sql.query("INSERT INTO logs SET ?", newLog
-  // , (err, res) => {
-  //   if (err) {
-  //     console.log("error: ", err);
-  //     result(err, null);
-  //     return;
-  //   }
-  //   //console.log("created tutorial: ", { id: res.insertId, ...newLog });
-  //   result(null, { id: res.insertId, ...newLog });
-  // }
-  );
+Stock.createLog = (newLog) => {
+  sql.query("INSERT INTO logs SET ?", newLog);
 };
 
-// Stock.getAllLogs = (result) => {
-//   let query = "SELECT * FROM stocks";
-//   // if (title) {
-//   //   query += ` WHERE title LIKE '%${title}%'`;
-//   // }
-//   sql.query(query, (err, res) => {
-//     if (err) {
-//       //console.log("error: ", err);
-//       result(null, err);
-//       return;
-//     }
-//     //console.log("stocks: ", res);
-//     result(null, res);
-//   });
-// };
+Stock.getLogs = (id, result) => {
+  sql.query(`SELECT * FROM logs WHERE location_id = ${id}`, (err, res) => {
+    if (err) {
+      result(null, err);
+      return;
+    }
+    if (res.length) {
+            result(null, res);
+            return;
+    } 
+    result({ kind: "not_found" }, null);
+  });
+};
 
 module.exports = Stock;
