@@ -1,30 +1,40 @@
 const Stock = require("../models/stock.model.js");
 
-exports.findAllLogById = (req, res) => {
-  Stock.getLogs(req.params.id, (err, data) => {
-    if (err) {
-      if (err.kind === "not_found") {
-        res.status(404).send({
-          message: `Not found Log with id ${req.params.id}.`
-        });
-      } else {
-        res.status(500).send({
-          message: "Error retrieving Log with id " + req.params.id
-        });
-      }
-    } else{
-      res.send(
-        {
-        "status_code" : 200,
-        "status": data.length >0 ?"Success, logs found": "No log found",
-        "location_id": req.params.id,
-        // "location_name": res[0].location,
-        // "product": res[0].product,
-        // "current_qty": res[0].quantity,
-        "logs": data
-      });
-    } 
+exports.findAllLogById =async (req, res) => {
+  var err,data
+  var arr = []
+  await Stock.getLogs(req.params.id)
+  .then((dataItem)=>{
+    data = dataItem
+  })
+  .catch((errItem)=>{
+    err=errItem
   });
+
+  if (err) {
+    if (err.kind === "not_found") {
+      arr.push({
+        message: `Not found Log with id ${req.params.id}.`
+      })
+      adj--
+    } else {
+      arr.push({
+        message: "Error retrieving Log with id " + req.params.id
+      })
+      adj--
+    }
+  } else{
+    arr.push({
+      "status_code" : 200,
+        "status": data!=null ?"Success, logs found": "No log found",
+        "location_id": req.params.id,
+        "location_name": data.location_name,
+        "product": data.product_name,
+        "current_qty": data.current_qty,
+        "logs": data
+    })
+  }
+  res.send(arr)
 };
 
 exports.findAll = (req, res) => {
@@ -51,22 +61,23 @@ exports.update =async (req, res) => {
       var adj = req.body.length;
       var arr=[]
       var arrRes= []
-      for(var i = 0; i < req.body.length; i++){
+    
+    for(var i = 0; i < req.body.length; i++){
         
-        var err,data
+        var err="",data=""
         await Stock.update(
           new Stock(req.body[i]) 
         ).then((dataItem)=>{
-          data = dataItem
+          data=dataItem
         })
         .catch((errItem)=>{
           err=errItem
         });
             if (err) {
-              if (err.kind === "not_found") {
-                await arrRes.push({
+              if (err.kind == "not_found") {
+                arrRes.push({
                   "status": "Failed",
-                  "error_message": "Invalid Product",
+                  "error_message": "Product not found",
                   "updated_at": dateTime,
                   "location_id": req.body[i].location_id
                 })
@@ -74,7 +85,7 @@ exports.update =async (req, res) => {
               } else {
                 arrRes.push({
                   "status": "Failed",
-                  "error_message": "Invalid Product",
+                  "error_message": "Invalid product",
                   "updated_at": dateTime,
                   "location_id": req.body[i].location_id
                 })

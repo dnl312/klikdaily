@@ -1,5 +1,5 @@
 const sql = require("./db.js");
-// constructor
+
 const Stock = function(stock) {
   this.location_id = stock.location_id
   this.adjustment = stock.adjustment
@@ -43,7 +43,7 @@ Stock.update = (stock)=> {
             })
             stock.location = res[0].location 
             stock.quantity = res[0].quantity
-            resolve({ ...stock});
+            resolve(stock);
            }
            )
         }
@@ -56,18 +56,26 @@ Stock.createLog = (newLog) => {
   sql.query("INSERT INTO logs SET ?", newLog);
 };
 
-Stock.getLogs = (id, result) => {
+Stock.getLogs = (id) => {
+  return new Promise((resolve, reject) => {
   sql.query(`SELECT * FROM logs WHERE location_id = ${id}`, (err, res) => {
     if (err) {
-      result(null, err);
+      resolve(err);
       return;
     }
     if (res.length) {
-            result(null, res);
-            return;
-    } 
-    result({ kind: "not_found" }, null);
+      sql.query(
+        "SELECT * FROM stocks Where id=? limit 1",
+        [id],
+        (err, loc) => {
+          res.location_name = loc[0].location
+          res.product_name = loc[0].product
+          res.current_qty = loc[0].quantity
+          resolve(res);
+        })
+    } else reject({ kind: "not_found" });
   });
+  })
 };
 
 module.exports = Stock;
