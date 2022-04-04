@@ -16,12 +16,10 @@ exports.findAllLogById =async (req, res) => {
       arr.push({
         message: `Not found Log with id ${req.params.id}.`
       })
-      adj--
     } else {
       arr.push({
         message: "Error retrieving Log with id " + req.params.id
       })
-      adj--
     }
   } else{
     arr.push({
